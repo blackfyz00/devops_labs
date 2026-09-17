@@ -1,0 +1,23 @@
+[project]
+name = "devops"
+version = "0.1.0"
+description = "devops"
+readme = "README.md"
+authors = [
+    { name = "Заславский Ярослав", email = "blackfyz@yandex.ru" }
+]
+
+requires-python = ">=3.12"
+dependencies = [
+    "playwright>=1.40.0",
+    "pydantic>=2.0.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+devops = "devops:main"
