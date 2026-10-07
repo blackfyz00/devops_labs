@@ -1,0 +1,11 @@
+services:
+  floci:
+    image: floci/floci:2.2.0
+    ports:
+      - "4566:4566"  # S3 и SQS через единый endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
