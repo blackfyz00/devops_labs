@@ -6,7 +6,11 @@ FLOCI_PORT := 4566
 
 # Сборка Docker-образа
 build:
-	docker build -t $(IMAGE_NAME) .
+	docker build \
+	  --network=host \
+	  --build-arg http_proxy=http://127.0.0.1:10809 \
+	  --build-arg https_proxy=http://127.0.0.1:10809 \
+	  -t quotes-scraper .
 
 # Развертывание инфраструктуры (Floci + Terraform)
 provision:
@@ -23,21 +27,29 @@ deploy: build
 	@echo "Deploying with BUCKET=$(BUCKET_NAME) and QUEUE=$(QUEUE_URL)"
 	docker stop $(CONTAINER_NAME) || true
 	docker rm $(CONTAINER_NAME) || true
+	
+	# Используем host-сеть, чтобы Chromium видел localhost:10809 
 	docker run -d \
 		--name $(CONTAINER_NAME) \
-		-e SQS_QUEUE_URL=$(QUEUE_URL) \
+		--network=host \
+		-e SQS_QUEUE_URL=http://localhost:4566/000000000000/scraper-queue \
 		-e S3_BUCKET_NAME=$(BUCKET_NAME) \
-		-e AWS_ENDPOINT_URL=http://host.docker.internal:$(FLOCI_PORT) \
-		--add-host=host.docker.internal:host-gateway \
+		-e AWS_ENDPOINT_URL=http://localhost:4566 \
+		-e http_proxy=http://127.0.0.1:10809 \
+		-e https_proxy=http://127.0.0.1:10809 \
+		-e no_proxy=localhost,127.0.0.1 \
 		$(IMAGE_NAME)
-
+		
 # Отправка тестового задания в очередь
 run:
 	$(eval QUEUE_URL := $(shell terraform -chdir=infra output -raw queue_url))
-	$(eval ENDPOINT := http://localhost:$(FLOCI_PORT))
 	docker run --rm \
+		--network=host \
 		-e SQS_QUEUE_URL=$(QUEUE_URL) \
-		-e AWS_ENDPOINT_URL=$(ENDPOINT) \
+		-e AWS_ENDPOINT_URL=http://localhost:4566 \
+		-e http_proxy=http://127.0.0.1:10809 \
+		-e https_proxy=http://127.0.0.1:10809 \
+		-e no_proxy=localhost,127.0.0.1 \
 		-v $(PWD)/scripts:/app/scripts \
 		-w /app \
 		python:3.12-slim \

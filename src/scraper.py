@@ -1,4 +1,5 @@
 # src/scraper.py
+import os
 import logging
 from typing import List
 
@@ -19,13 +20,25 @@ class QuotesScraper:
         self._playwright = None
         self._browser = None
         self._context: BrowserContext | None = None
+        
+        proxy_server = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+        self.proxy_config = {"server": proxy_server} if proxy_server else None
 
     async def __aenter__(self):
         self._playwright = await async_playwright().start()
-        self._browser = await self._playwright.chromium.launch(
-            headless=self.headless, 
-            args=["--no-sandbox"]
-        )
+        
+        # Базовые аргументы запуска
+        launch_kwargs = {
+            "headless": self.headless,
+            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+        }
+        
+        # Если найден прокси, добавляем его в конфигурацию браузера
+        if self.proxy_config:
+            logger.info(f"Using proxy for browser: {self.proxy_config['server']}")
+            launch_kwargs["proxy"] = self.proxy_config
+            
+        self._browser = await self._playwright.chromium.launch(**launch_kwargs)
         self._context = await self._browser.new_context()
         return self
 
@@ -40,28 +53,31 @@ class QuotesScraper:
     async def scroll_and_extract(self, max_scrolls: int = 50) -> List[Quote]:
         """Скроллит страницу и собирает все цитаты."""
         page = await self._context.new_page()
-        await page.goto(self.URL, wait_until="networkidle")
+        try:
+            await page.goto(self.URL, wait_until="networkidle")
+            
+            seen_texts: set[str] = set()
+            quotes: List[Quote] = []
+            prev_count = 0
 
-        seen_texts: set[str] = set()
-        quotes: List[Quote] = []
-        prev_count = 0
+            for i in range(max_scrolls):
+                current_quotes = await self._parse_quotes(page, seen_texts)
+                quotes.extend(current_quotes)
 
-        for i in range(max_scrolls):
-            current_quotes = await self._parse_quotes(page, seen_texts)
-            quotes.extend(current_quotes)
+                if len(quotes) == prev_count:
+                    logger.info("Новых цитат не найдено после %d скроллов", i)
+                    break
 
-            if len(quotes) == prev_count:
-                logger.info("Новых цитат не найдено после %d скроллов", i)
-                break
+                prev_count = len(quotes)
+                logger.info("Скролл %d: собрано %d цитат", i + 1, len(quotes))
 
-            prev_count = len(quotes)
-            logger.info("Скролл %d: собрано %d цитат", i + 1, len(quotes))
-
-            # Скроллим вниз и ждём подгрузки нового контента
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await page.wait_for_timeout(1000)
-
-        await page.close()
+                # Скроллим вниз и ждём подгрузки нового контента
+                await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                await page.wait_for_timeout(1000)
+                
+        finally:
+            await page.close()
+            
         return quotes
 
     async def _parse_quotes(self, page: Page, seen: set[str]) -> List[Quote]:
