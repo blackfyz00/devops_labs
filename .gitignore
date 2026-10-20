@@ -225,3 +225,9 @@ tt.md
 .streamlit/secrets.toml
 .aider*
 gitignore/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
