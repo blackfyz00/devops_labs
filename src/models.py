@@ -1,4 +1,3 @@
-# src/models.py
 from pydantic import BaseModel, Field
 from typing import List
 from datetime import datetime

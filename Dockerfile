@@ -1,20 +1,17 @@
+# Dockerfile
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей для Playwright
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget gnupg ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml uv.lock ./
-RUN pip install uv && uv sync --frozen
+COPY pyproject.toml uv.lock README.md ./
+RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev
 
-# Установка браузеров Playwright
 RUN uv run playwright install --with-deps chromium
 
 COPY src/ ./src/
-COPY scripts/ ./scripts/
 
 CMD ["uv", "run", "-m", "src.main"]

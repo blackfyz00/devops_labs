@@ -1,0 +1,10 @@
+# infra/cloud-init.yaml
+users:
+  - name: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - "{{ SSH_PUBLIC_KEY }}"
+packages:
+  - python3
+  - python3-apt
+package_update: true

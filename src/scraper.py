@@ -1,4 +1,3 @@
-# src/scraper.py
 import os
 import logging
 from typing import List
@@ -27,13 +26,11 @@ class QuotesScraper:
     async def __aenter__(self):
         self._playwright = await async_playwright().start()
         
-        # Базовые аргументы запуска
         launch_kwargs = {
             "headless": self.headless,
             "args": ["--no-sandbox", "--disable-setuid-sandbox"]
         }
         
-        # Если найден прокси, добавляем его в конфигурацию браузера
         if self.proxy_config:
             logger.info(f"Using proxy for browser: {self.proxy_config['server']}")
             launch_kwargs["proxy"] = self.proxy_config
@@ -71,7 +68,6 @@ class QuotesScraper:
                 prev_count = len(quotes)
                 logger.info("Скролл %d: собрано %d цитат", i + 1, len(quotes))
 
-                # Скроллим вниз и ждём подгрузки нового контента
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 await page.wait_for_timeout(1000)
                 
