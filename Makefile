@@ -1,7 +1,7 @@
 # Makefile 
 TARGET_HOST := 10.30.39.189
 TARGET_USER := admin
-SSH_KEY := .lab/id_rsa
+SSH_KEY := gitignore/.lab/id_rsa
 ANSIBLE_DIR := infra/ansible
 DEPLOY_DIR := deploy
 
@@ -16,7 +16,7 @@ help:
 	@echo "  make verify         - Check results"
 
 setup:
-	@mkdir -p .lab
+	@mkdir -p gitignore/.lab
 	@test -f $(SSH_KEY) || ssh-keygen -t ed25519 -f $(SSH_KEY) -N "" -q
 	@chmod 600 $(SSH_KEY)
 	@echo "==> SSH Key generated."
@@ -79,7 +79,7 @@ logs:
 
 destroy:
 	@echo "==> Cleaning up local artifacts..."
-	rm -rf .lab
+	rm -rf gitignore/.lab
 	rm -rf $(ANSIBLE_DIR)/inventories/lab
 	@echo "Note: Remote app data remains. To clean remote: ssh user@host 'rm -rf ~/app'"
 
