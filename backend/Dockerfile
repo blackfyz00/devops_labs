@@ -14,4 +14,4 @@ RUN uv sync
 ENV PORT=8000
 EXPOSE $PORT
 
-CMD ["uv", "run", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "$PORT"]
+CMD sh -c "uv run uvicorn src.api:app --host 0.0.0.0 --port $PORT"
