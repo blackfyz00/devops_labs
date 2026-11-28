@@ -2,7 +2,6 @@
 
 install:
 	cd backend && pip install -e ".[dev]"
-	cd backend && playwright install chromium
 	cd frontend && npm install
 
 dev:
